@@ -1,0 +1,14 @@
+port: "8000"
+
+db:
+  username: "postgres"
+  host: "localhost"
+  port: "5432"
+  dbname: "gotest"
+  sslmode: "disable"
+
+jwt:
+  accessTokenTTL: 30m
+  refreshTokenTTL: 50000m
+  salt: "hjqrasfasfajfhajs"
+  signingKey: "aaaaa"
