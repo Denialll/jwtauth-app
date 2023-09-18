@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"crypto/sha1"
-	"errors"
 	"fmt"
 	"github.com/Denialll/jwtauth-app/internal/models"
 	"github.com/Denialll/jwtauth-app/internal/repository"
@@ -14,9 +13,7 @@ import (
 )
 
 const (
-	salt       = "hjqrasfasfajfhajs"
-	signingKey = "aaaaa"
-	tokenTTL   = 12 * time.Hour
+	salt = "hjqrasfasfajfhajs"
 )
 
 type AuthService struct {
@@ -31,12 +28,10 @@ type tokenClaims struct {
 	UserId int `json:"user_id"`
 }
 
-func NewAuthService(repo repository.Authorization, tokenManager pkg.TokenManager, accessTTL, refreshTTL time.Duration) *AuthService {
+func NewAuthService(repo repository.Authorization, tokenManager pkg.TokenManager) *AuthService {
 	return &AuthService{
-		repo:            repo,
-		tokenManager:    tokenManager,
-		accessTokenTTL:  accessTTL,
-		refreshTokenTTL: refreshTTL,
+		repo:         repo,
+		tokenManager: tokenManager,
 	}
 }
 
@@ -54,26 +49,6 @@ func (s *AuthService) GenerateTokens(ctx context.Context, username, password str
 	return s.createSession(ctx, user.Id)
 }
 
-func (s *AuthService) ParseToken(accessToken string) (int, error) {
-	token, err := jwt.ParseWithClaims(accessToken, &tokenClaims{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("invalid signing method")
-		}
-
-		return []byte(signingKey), nil
-	})
-	if err != nil {
-		return 0, err
-	}
-
-	claims, ok := token.Claims.(*tokenClaims)
-	if !ok {
-		return 0, errors.New("token claims are not of type *tokenClaims")
-	}
-
-	return claims.UserId, nil
-}
-
 func generatePasswordHash(password string) string {
 	hash := sha1.New()
 	hash.Write([]byte(password))
@@ -87,22 +62,17 @@ func (s *AuthService) createSession(ctx context.Context, studentId int) (Tokens,
 		err error
 	)
 
-	res.AccessToken, err = s.tokenManager.NewJWT(strconv.Itoa(studentId), s.accessTokenTTL)
+	res.AccessToken, err = s.tokenManager.NewJWT(strconv.Itoa(studentId))
 	if err != nil {
 		return res, err
 	}
 
-	res.RefreshToken, err = s.tokenManager.NewRefreshToken()
+	res.RefreshToken, err = s.tokenManager.NewRefreshToken(strconv.Itoa(studentId))
 	if err != nil {
 		return res, err
 	}
 
-	session := models.Session{
-		RefreshToken: res.RefreshToken,
-		ExpiresAt:    time.Now().Add(tokenTTL),
-	}
-
-	err = s.repo.SetSession(ctx, studentId, session)
+	err = s.repo.SetSession(ctx, studentId, res.RefreshToken)
 
 	return res, err
 }

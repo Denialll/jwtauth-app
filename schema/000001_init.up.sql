@@ -1,11 +1,10 @@
-CREATE TABLE users
+CREATE TABLE usrs
 (
     id            serial       not null unique,
     name          varchar(255) not null,
     username      varchar(255) not null unique,
     password_hash varchar(255) not null,
     refresh_token varchar(255),
-    expires_at TIMESTAMP
 );
 
 CREATE TABLE todo_lists

@@ -4,39 +4,45 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
-	"math/rand"
 	"time"
-)
-
-const (
-	//salt       = "hjqrasfasfajfhajs"
-	//signingKey = "qrkjk#4#%35FSFJlja#4353KSFjH"
-	tokenTTL = 1
 )
 
 // TokenManager provides logic for JWT & Refresh tokens generation and parsing.
 type TokenManager interface {
-	NewJWT(userId string, accessTokenTTL time.Duration) (string, error)
+	NewJWT(userId string) (string, error)
 	Parse(accessToken string) (string, error)
-	NewRefreshToken() (string, error)
+	NewRefreshToken(userId string) (string, error)
 }
 
 type Manager struct {
-	signingKey string
+	signingKey      string
+	accessTokenTTL  time.Duration
+	refreshTokenTTL time.Duration
 }
 
-func NewManager(signingKey string) (*Manager, error) {
+func NewManager(signingKey string, accessTokenTTL, refreshTokenTTL time.Duration) (*Manager, error) {
 	if signingKey == "" {
 		return nil, errors.New("empty signing key")
 	}
 
-	return &Manager{signingKey: signingKey}, nil
+	fmt.Println(accessTokenTTL)
+	fmt.Println(refreshTokenTTL)
+
+	if accessTokenTTL >= refreshTokenTTL {
+		return nil, errors.New("AccessTokenTTL more then RefreshTokenTTL")
+	}
+
+	return &Manager{
+		signingKey:      signingKey,
+		accessTokenTTL:  accessTokenTTL,
+		refreshTokenTTL: refreshTokenTTL,
+	}, nil
 }
 
-func (m *Manager) NewJWT(userId string, accessTokenTTL time.Duration) (string, error) {
+func (m *Manager) NewJWT(userId string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512,
 		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(accessTokenTTL).Unix(),
+			ExpiresAt: time.Now().Add(m.accessTokenTTL).Unix(),
 			//IssuedAt:  time.Now().Unix(),
 			Subject: userId,
 		})
@@ -63,15 +69,32 @@ func (m *Manager) Parse(accessToken string) (string, error) {
 	return claims["sub"].(string), nil
 }
 
-func (m *Manager) NewRefreshToken() (string, error) {
-	b := make([]byte, 32)
+func (m *Manager) NewRefreshToken(userId string) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(m.refreshTokenTTL).Unix(),
+			//IssuedAt:  time.Now().Unix(),
+			Subject: userId,
+		})
+	token.Header["type"] = "REF"
 
-	s := rand.NewSource(time.Now().Unix())
-	r := rand.New(s)
-
-	if _, err := r.Read(b); err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%x", b), nil
+	return token.SignedString([]byte(m.signingKey))
 }
+
+//func (m *Manager) NewRefreshToken() (models.Session, error) {
+//	b := make([]byte, 32)
+//
+//	s := rand.NewSource(time.Now().Unix())
+//	r := rand.New(s)
+//
+//	if _, err := r.Read(b); err != nil {
+//		return models.Session{}, err
+//	}
+//
+//	session := models.Session{
+//		RefreshToken: fmt.Sprintf("%x", b),
+//		ExpiresAt:    time.Now().Add(m.refreshTokenTTL),
+//	}
+//
+//	return session, nil
+//}

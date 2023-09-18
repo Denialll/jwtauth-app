@@ -36,7 +36,7 @@ func main() {
 		logrus.Fatalf("Failed to init db: %s", err.Error())
 	}
 
-	tokenManager, err := pkg.NewManager("aaaaa")
+	tokenManager, err := pkg.NewManager("aaaaa", viper.GetDuration("jwt.accessTokenTTL"), viper.GetDuration("jwt.refreshTokenTTL"))
 	if err != nil {
 		logrus.Error(err)
 		return

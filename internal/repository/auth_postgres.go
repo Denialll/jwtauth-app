@@ -48,10 +48,10 @@ func (r *AuthPostgres) GetUser(username, password string) (models.User, error) {
 //	return nil
 //}
 
-func (r *AuthPostgres) SetSession(ctx context.Context, studentID int, session models.Session) error {
-	fmt.Println(studentID)
-	query := fmt.Sprintf("UPDATE %s SET refresh_token = $1, expires_at = $2 WHERE id = $3", usersTable)
-	_, err := r.db.ExecContext(ctx, query, session.RefreshToken, session.ExpiresAt, studentID)
+func (r *AuthPostgres) SetSession(ctx context.Context, userId int, refreshToken string) error {
+	fmt.Println(userId)
+	query := fmt.Sprintf("UPDATE %s SET refresh_token = $1 WHERE id = $2", usersTable)
+	_, err := r.db.ExecContext(ctx, query, refreshToken, userId)
 	if err != nil {
 		return err
 	}

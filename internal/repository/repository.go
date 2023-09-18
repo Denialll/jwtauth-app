@@ -9,7 +9,7 @@ import (
 type Authorization interface {
 	CreateUser(user models.User) (int, error)
 	GetUser(username, password string) (models.User, error)
-	SetSession(ctx context.Context, studentID int, session models.Session) error
+	SetSession(ctx context.Context, studentID int, refreshToken string) error
 }
 
 type TodoList interface {

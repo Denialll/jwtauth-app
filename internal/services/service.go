@@ -11,7 +11,6 @@ import (
 type Authorization interface {
 	CreateUser(user models.User) (int, error)
 	GenerateTokens(ctx context.Context, username, password string) (Tokens, error)
-	ParseToken(token string) (int, error)
 }
 
 type Tokens struct {
@@ -39,6 +38,6 @@ type Service struct {
 
 func NewService(deps Deps) *Service {
 	return &Service{
-		Authorization: NewAuthService(deps.Repos, deps.TokenManager, deps.AccessTTL, deps.RefreshTTL),
+		Authorization: NewAuthService(deps.Repos, deps.TokenManager),
 	}
 }

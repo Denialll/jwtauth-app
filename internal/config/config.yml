@@ -8,7 +8,7 @@ db:
   sslmode: "disable"
 
 jwt:
-  accessTokenTTL: 30m
-  refreshTokenTTL: 50000m
+  accessTokenTTL: 300m
+  refreshTokenTTL: 50009m
   salt: "hjqrasfasfajfhajs"
   signingKey: "aaaaa"

@@ -48,3 +48,6 @@ func (h *Handler) signIn(c *gin.Context) {
 		"token": token,
 	})
 }
+
+func (h *Handler) refresh(c *gin.Context) {
+}
