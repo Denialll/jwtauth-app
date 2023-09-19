@@ -7,7 +7,6 @@ import (
 	"github.com/Denialll/jwtauth-app/internal/models"
 	"github.com/Denialll/jwtauth-app/internal/repository"
 	"github.com/Denialll/jwtauth-app/pkg"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
 
@@ -34,14 +33,16 @@ func NewAuthService(repo repository.Authorization, tokenManager pkg.TokenManager
 	}
 }
 
-func (s *AuthService) CreateUser(ctx context.Context, user models.User) (primitive.ObjectID, error) {
+func (s *AuthService) CreateUser(ctx context.Context, user models.User) (string, error) {
 	user.Password = generatePasswordHash(user.Password)
 
 	return s.repo.CreateUser(ctx, user)
 }
 
-func (s *AuthService) GenerateTokens(ctx context.Context, username, password string) (Tokens, error) {
-	user, err := s.repo.GetUser(ctx, username, generatePasswordHash(password))
+func (s *AuthService) GenerateTokens(ctx context.Context, uuid string) (Tokens, error) {
+	//user, err := s.repo.GetUser(ctx, uuid)
+	user, err := s.repo.GetUser(ctx, uuid)
+
 	if err != nil {
 		return Tokens{}, err
 	}
@@ -56,23 +57,23 @@ func generatePasswordHash(password string) string {
 	return fmt.Sprintf("%x", hash.Sum([]byte(salt)))
 }
 
-func (s *AuthService) createSession(ctx context.Context, userId primitive.ObjectID) (Tokens, error) {
+func (s *AuthService) createSession(ctx context.Context, uuid string) (Tokens, error) {
 	var (
 		res Tokens
 		err error
 	)
 
-	res.AccessToken, err = s.tokenManager.NewJWT(userId.Hex())
+	res.AccessToken, err = s.tokenManager.NewJWT(uuid)
 	if err != nil {
 		return res, err
 	}
 
-	res.RefreshToken, err = s.tokenManager.NewRefreshToken(userId.Hex())
+	res.RefreshToken, err = s.tokenManager.NewRefreshToken(uuid)
 	if err != nil {
 		return res, err
 	}
 
-	err = s.repo.SetSession(ctx, userId, res.RefreshToken)
-
+	err = s.repo.SetSession(ctx, uuid, res.RefreshToken)
+	fmt.Println(res.AccessToken)
 	return res, err
 }

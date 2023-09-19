@@ -9,9 +9,9 @@ import (
 
 // TokenManager provides logic for JWT & Refresh tokens generation and parsing.
 type TokenManager interface {
-	NewJWT(userId string) (string, error)
+	NewJWT(uuid string) (string, error)
 	Parse(accessToken string) (string, error)
-	NewRefreshToken(userId string) (string, error)
+	NewRefreshToken(uuid2 string) (string, error)
 }
 
 type Manager struct {

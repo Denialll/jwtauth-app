@@ -5,13 +5,12 @@ import (
 	"github.com/Denialll/jwtauth-app/internal/models"
 	"github.com/Denialll/jwtauth-app/internal/repository"
 	"github.com/Denialll/jwtauth-app/pkg"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
 
 type Authorization interface {
-	CreateUser(ctx context.Context, user models.User) (primitive.ObjectID, error)
-	GenerateTokens(ctx context.Context, username, password string) (Tokens, error)
+	CreateUser(ctx context.Context, user models.User) (string, error)
+	GenerateTokens(ctx context.Context, uuid string) (Tokens, error)
 }
 
 type Tokens struct {

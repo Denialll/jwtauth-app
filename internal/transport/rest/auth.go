@@ -28,23 +28,23 @@ func (h *Handler) signUp(c *gin.Context) {
 	})
 }
 
-type signInInput struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
+//type signInInput struct {
+//	Username string `json:"username" binding:"required"`
+//	Password string `json:"password" binding:"required"`
+//}
 
 func (h *Handler) signIn(c *gin.Context) {
-	var input signInInput
+	//var input signInInput
+	//
+	//if err := c.BindJSON(&input); err != nil {
+	//	newErrorResponse(c, http.StatusBadRequest, err.Error())
+	//	return
+	//}
 
-	if err := c.BindJSON(&input); err != nil {
-		newErrorResponse(c, http.StatusBadRequest, err.Error())
-		return
-	}
+	uuid := c.Query("GUID")
+	fmt.Println("guid: " + uuid)
 
-	//guid := c.Query("guid")
-	//fmt.Println("guid: " + guid)
-
-	token, err := h.services.Authorization.GenerateTokens(c.Request.Context(), input.Username, input.Password)
+	token, err := h.services.Authorization.GenerateTokens(c.Request.Context(), uuid)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
