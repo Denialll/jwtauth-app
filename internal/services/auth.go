@@ -7,8 +7,7 @@ import (
 	"github.com/Denialll/jwtauth-app/internal/models"
 	"github.com/Denialll/jwtauth-app/internal/repository"
 	"github.com/Denialll/jwtauth-app/pkg"
-	"github.com/dgrijalva/jwt-go"
-	"strconv"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 )
 
@@ -23,10 +22,10 @@ type AuthService struct {
 	refreshTokenTTL time.Duration
 }
 
-type tokenClaims struct {
-	jwt.StandardClaims
-	UserId int `json:"user_id"`
-}
+//type tokenClaims struct {
+//	jwt.StandardClaims
+//	UserId int `json:"user_id"`
+//}
 
 func NewAuthService(repo repository.Authorization, tokenManager pkg.TokenManager) *AuthService {
 	return &AuthService{
@@ -35,13 +34,14 @@ func NewAuthService(repo repository.Authorization, tokenManager pkg.TokenManager
 	}
 }
 
-func (s *AuthService) CreateUser(user models.User) (int, error) {
+func (s *AuthService) CreateUser(ctx context.Context, user models.User) (primitive.ObjectID, error) {
 	user.Password = generatePasswordHash(user.Password)
-	return s.repo.CreateUser(user)
+
+	return s.repo.CreateUser(ctx, user)
 }
 
 func (s *AuthService) GenerateTokens(ctx context.Context, username, password string) (Tokens, error) {
-	user, err := s.repo.GetUser(username, generatePasswordHash(password))
+	user, err := s.repo.GetUser(ctx, username, generatePasswordHash(password))
 	if err != nil {
 		return Tokens{}, err
 	}
@@ -56,23 +56,23 @@ func generatePasswordHash(password string) string {
 	return fmt.Sprintf("%x", hash.Sum([]byte(salt)))
 }
 
-func (s *AuthService) createSession(ctx context.Context, studentId int) (Tokens, error) {
+func (s *AuthService) createSession(ctx context.Context, userId primitive.ObjectID) (Tokens, error) {
 	var (
 		res Tokens
 		err error
 	)
 
-	res.AccessToken, err = s.tokenManager.NewJWT(strconv.Itoa(studentId))
+	res.AccessToken, err = s.tokenManager.NewJWT(userId.Hex())
 	if err != nil {
 		return res, err
 	}
 
-	res.RefreshToken, err = s.tokenManager.NewRefreshToken(strconv.Itoa(studentId))
+	res.RefreshToken, err = s.tokenManager.NewRefreshToken(userId.Hex())
 	if err != nil {
 		return res, err
 	}
 
-	err = s.repo.SetSession(ctx, studentId, res.RefreshToken)
+	err = s.repo.SetSession(ctx, userId, res.RefreshToken)
 
 	return res, err
 }

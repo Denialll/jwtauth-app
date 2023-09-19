@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"github.com/Denialll/jwtauth-app/internal/models"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -14,7 +15,9 @@ func (h *Handler) signUp(c *gin.Context) {
 		return
 	}
 
-	id, err := h.services.Authorization.CreateUser(input)
+	id, err := h.services.Authorization.CreateUser(c.Request.Context(), input)
+	fmt.Println("--------")
+	fmt.Println(id)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -37,6 +40,9 @@ func (h *Handler) signIn(c *gin.Context) {
 		newErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
+
+	//guid := c.Query("guid")
+	//fmt.Println("guid: " + guid)
 
 	token, err := h.services.Authorization.GenerateTokens(c.Request.Context(), input.Username, input.Password)
 	if err != nil {

@@ -11,4 +11,5 @@ jwt:
   accessTokenTTL: 300m
   refreshTokenTTL: 50009m
   salt: "hjqrasfasfajfhajs"
-  signingKey: "aaaaa"
+  accessTokenKey: "2178fyw8iuau982io4j"
+  refreshTokenKey: "129yfsahu32y46yufsd"

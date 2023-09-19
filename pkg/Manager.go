@@ -24,10 +24,6 @@ func NewManager(signingKey string, accessTokenTTL, refreshTokenTTL time.Duration
 	if signingKey == "" {
 		return nil, errors.New("empty signing key")
 	}
-
-	fmt.Println(accessTokenTTL)
-	fmt.Println(refreshTokenTTL)
-
 	if accessTokenTTL >= refreshTokenTTL {
 		return nil, errors.New("AccessTokenTTL more then RefreshTokenTTL")
 	}
@@ -76,7 +72,7 @@ func (m *Manager) NewRefreshToken(userId string) (string, error) {
 			//IssuedAt:  time.Now().Unix(),
 			Subject: userId,
 		})
-	token.Header["type"] = "REF"
+	token.Header["typ"] = "REF"
 
 	return token.SignedString([]byte(m.signingKey))
 }

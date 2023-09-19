@@ -3,13 +3,14 @@ package repository
 import (
 	"context"
 	"github.com/Denialll/jwtauth-app/internal/models"
-	"github.com/jmoiron/sqlx"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Authorization interface {
-	CreateUser(user models.User) (int, error)
-	GetUser(username, password string) (models.User, error)
-	SetSession(ctx context.Context, studentID int, refreshToken string) error
+	CreateUser(ctx context.Context, user models.User) (primitive.ObjectID, error)
+	GetUser(ctx context.Context, username, password string) (models.User, error)
+	SetSession(ctx context.Context, userId primitive.ObjectID, refreshToken string) error
 }
 
 type TodoList interface {
@@ -20,11 +21,9 @@ type TodoItem interface {
 
 type Repository struct {
 	Authorization
-	TodoList
-	TodoItem
 }
 
-func NewRepository(db *sqlx.DB) *Repository {
+func NewRepository(db *mongo.Database) *Repository {
 	return &Repository{
 		Authorization: NewAuthPostgres(db),
 	}
