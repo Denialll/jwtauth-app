@@ -1,25 +1,20 @@
 package handler
 
 import (
-	"github.com/Denialll/jwtauth-app/internal/services"
+	_ "github.com/Denialll/jwtauth-app/docs"
+	"github.com/Denialll/jwtauth-app/internal/service"
 	"github.com/Denialll/jwtauth-app/pkg"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-//type Handler struct {
-//	services *services.Service
-//}
-//
-//func NewHandler(services *services.Service) *Handler {
-//	return &Handler{services: services}
-//}
-
 type Handler struct {
-	services     *services.Service
+	services     *service.Service
 	tokenManager pkg.TokenManager
 }
 
-func NewHandler(services *services.Service, tokenManager pkg.TokenManager) *Handler {
+func NewHandler(services *service.Service, tokenManager pkg.TokenManager) *Handler {
 	return &Handler{
 		services:     services,
 		tokenManager: tokenManager,
@@ -29,6 +24,8 @@ func NewHandler(services *services.Service, tokenManager pkg.TokenManager) *Hand
 func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.New()
 
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	auth := router.Group("/auth")
 	{
 		auth.POST("/sign-up", h.signUp)
@@ -36,29 +33,9 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		auth.POST("/refresh", h.refresh)
 	}
 
-	api := router.Group("/api", h.userIdentity)
+	api := router.Group("/checkjwt", h.userIdentity)
 	{
-		lists := api.Group("/lists")
-		{
-			lists.POST("/", h.createList)
-			lists.GET("/", h.getAllLists)
-			lists.GET("/:id", h.getListById)
-			lists.PUT("/:id", h.updateList)
-			lists.DELETE("/:id", h.deleteList)
-
-			items := lists.Group(":id/items")
-			{
-				items.POST("/", h.createItem)
-				items.GET("/", h.getAllItems)
-			}
-		}
-
-		items := api.Group("items")
-		{
-			items.GET("/:id", h.getItemById)
-			items.PUT("/:id", h.updateItem)
-			items.DELETE("/:id", h.deleteItem)
-		}
+		api.GET("/", h.checkJWT)
 	}
 
 	return router

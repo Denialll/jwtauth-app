@@ -4,24 +4,26 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
-	"time"
+	"math/rand"
+	time "time"
 )
 
-// TokenManager provides logic for JWT & Refresh tokens generation and parsing.
 type TokenManager interface {
-	NewJWT(uuid string) (string, error)
-	Parse(accessToken string) (string, error)
-	NewRefreshToken(uuid2 string) (string, error)
+	NewAccessToken(uuid string, timeCreate time.Time) (string, error)
+	Parse(accessToken string) (jwt.MapClaims, error)
+	ParseUnverified(accessToken string) (jwt.MapClaims, error)
+	NewRefreshToken() (string, error)
 }
 
 type Manager struct {
-	signingKey      string
-	accessTokenTTL  time.Duration
-	refreshTokenTTL time.Duration
+	signingKeyAccess  string
+	signingKeyRefresh string
+	accessTokenTTL    time.Duration
+	refreshTokenTTL   time.Duration
 }
 
-func NewManager(signingKey string, accessTokenTTL, refreshTokenTTL time.Duration) (*Manager, error) {
-	if signingKey == "" {
+func NewManager(signingKeyAccess string, accessTokenTTL, refreshTokenTTL time.Duration) (*Manager, error) {
+	if signingKeyAccess == "" {
 		return nil, errors.New("empty signing key")
 	}
 	if accessTokenTTL >= refreshTokenTTL {
@@ -29,68 +31,70 @@ func NewManager(signingKey string, accessTokenTTL, refreshTokenTTL time.Duration
 	}
 
 	return &Manager{
-		signingKey:      signingKey,
-		accessTokenTTL:  accessTokenTTL,
-		refreshTokenTTL: refreshTokenTTL,
+		signingKeyAccess: signingKeyAccess,
+		accessTokenTTL:   accessTokenTTL,
+		refreshTokenTTL:  refreshTokenTTL,
 	}, nil
 }
 
-func (m *Manager) NewJWT(userId string) (string, error) {
+func (m *Manager) NewAccessToken(userId string, timeCreate time.Time) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(m.accessTokenTTL).Unix(),
-			//IssuedAt:  time.Now().Unix(),
-			Subject: userId,
+			NotBefore: timeCreate.Unix(),
+			Subject:   userId,
 		})
-	return token.SignedString([]byte(m.signingKey))
+
+	return token.SignedString([]byte(m.signingKeyAccess))
 }
 
-func (m *Manager) Parse(accessToken string) (string, error) {
+func (m *Manager) Parse(accessToken string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(accessToken, func(token *jwt.Token) (i interface{}, err error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 
-		return []byte(m.signingKey), nil
+		return []byte(m.signingKeyAccess), nil
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", fmt.Errorf("error get user claims from token")
+		return nil, fmt.Errorf("error get user claims from token")
 	}
 
-	return claims["sub"].(string), nil
+	fmt.Println(claims)
+
+	return claims, nil
 }
 
-func (m *Manager) NewRefreshToken(userId string) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS512,
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(m.refreshTokenTTL).Unix(),
-			//IssuedAt:  time.Now().Unix(),
-			Subject: userId,
-		})
-	token.Header["typ"] = "REF"
+func (m *Manager) ParseUnverified(accessToken string) (jwt.MapClaims, error) {
+	token, _, err := new(jwt.Parser).ParseUnverified(accessToken, jwt.MapClaims{})
+	if err != nil {
+		return nil, err
+	}
 
-	return token.SignedString([]byte(m.signingKey))
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, fmt.Errorf("error get user claims from token")
+	}
+
+	fmt.Println(claims)
+
+	return claims, nil
 }
 
-//func (m *Manager) NewRefreshToken() (models.Session, error) {
-//	b := make([]byte, 32)
-//
-//	s := rand.NewSource(time.Now().Unix())
-//	r := rand.New(s)
-//
-//	if _, err := r.Read(b); err != nil {
-//		return models.Session{}, err
-//	}
-//
-//	session := models.Session{
-//		RefreshToken: fmt.Sprintf("%x", b),
-//		ExpiresAt:    time.Now().Add(m.refreshTokenTTL),
-//	}
-//
-//	return session, nil
-//}
+func (m *Manager) NewRefreshToken() (string, error) {
+	b := make([]byte, 32)
+
+	s := rand.NewSource(time.Now().Unix())
+	r := rand.New(s)
+
+	if _, err := r.Read(b); err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", b), nil
+}

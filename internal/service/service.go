@@ -1,27 +1,22 @@
-package services
+package service
 
 import (
 	"context"
-	"github.com/Denialll/jwtauth-app/internal/models"
+	"github.com/Denialll/jwtauth-app/internal/model"
 	"github.com/Denialll/jwtauth-app/internal/repository"
 	"github.com/Denialll/jwtauth-app/pkg"
 	"time"
 )
 
 type Authorization interface {
-	CreateUser(ctx context.Context, user models.User) (string, error)
+	CreateUser(ctx context.Context, user model.User) (string, error)
 	GenerateTokens(ctx context.Context, uuid string) (Tokens, error)
+	UpdateTokens(ctx context.Context, accessToken, refreshToken string) (Tokens, error)
 }
 
 type Tokens struct {
 	AccessToken  string
 	RefreshToken string
-}
-
-type TodoList interface {
-}
-
-type TodoItem interface {
 }
 
 type Deps struct {
@@ -32,12 +27,10 @@ type Deps struct {
 
 type Service struct {
 	Authorization
-	TodoList
-	TodoItem
 }
 
 func NewService(deps Deps) *Service {
 	return &Service{
-		Authorization: NewAuthService(deps.Repos, deps.TokenManager),
+		Authorization: NewAuthService(deps.Repos, deps.TokenManager, deps.RefreshTTL),
 	}
 }
