@@ -59,10 +59,6 @@ func (s *AuthService) UpdateTokens(ctx context.Context, authHeader, refreshToken
 		return Tokens{}, fmt.Errorf("refresh token expired")
 	}
 
-	if tokenClaims["nbf"].(float64) != float64(user.Session.IssuedAt.Unix()) {
-		return Tokens{}, fmt.Errorf("these tokens were not issued together")
-	}
-
 	decodedToken, err := base64.StdEncoding.DecodeString(refreshToken)
 	if err != nil {
 		return Tokens{}, err
@@ -71,6 +67,10 @@ func (s *AuthService) UpdateTokens(ctx context.Context, authHeader, refreshToken
 	err = bcrypt.CompareHashAndPassword([]byte(user.Session.RefreshToken), decodedToken)
 	if err != nil {
 		return Tokens{}, err
+	}
+
+	if tokenClaims["nbf"].(float64) != float64(user.Session.IssuedAt.Unix()) {
+		return Tokens{}, fmt.Errorf("these tokens were not issued together")
 	}
 
 	tokens, err := s.GenerateTokens(ctx, user.Id)
@@ -119,7 +119,7 @@ func (s *AuthService) createSession(ctx context.Context, uuid string) (Tokens, e
 }
 
 func algoBCrypt(str string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(str), 14)
+	bytes, err := bcrypt.GenerateFromPassword([]byte(str), 6)
 	if err != nil {
 		return "", err
 	}
